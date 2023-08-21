@@ -98,7 +98,7 @@ impl EditInteractionResponse {
         self
     }
 
-    /// Creates components for this message.
+    /// Sets the components of this message.
     pub fn components<F>(&mut self, f: F) -> &mut Self
     where
         F: FnOnce(&mut CreateComponents) -> &mut CreateComponents,
@@ -107,12 +107,6 @@ impl EditInteractionResponse {
         f(&mut components);
 
         self.0.insert("components", Value::from(components.0));
-        self
-    }
-
-    /// Sets the components of this message.
-    pub fn set_components(&mut self, components: CreateComponents) -> &mut Self {
-        self.0.insert("components", Value::Array(components.0));
         self
     }
 }
