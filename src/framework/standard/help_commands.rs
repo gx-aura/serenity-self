@@ -58,7 +58,7 @@ use futures::future::{BoxFuture, FutureExt};
 #[cfg(all(feature = "cache", feature = "http"))]
 use levenshtein::levenshtein;
 #[cfg(all(feature = "cache", feature = "http"))]
-use tracing::warn;
+use tracing::debug;
 
 #[cfg(all(feature = "cache", feature = "http"))]
 use super::structures::Command as InternalCommand;
@@ -203,7 +203,7 @@ pub fn has_all_requirements(cache: impl AsRef<Cache>, cmd: &CommandOptions, msg:
                         || (has_correct_roles(&cmd, &roles, &member)
                             && has_correct_permissions(cache, &cmd, msg))
                 } else {
-                    warn!("Failed to find the guild and its roles.");
+                    debug!("Failed to find the guild and its roles.");
 
                     false
                 };

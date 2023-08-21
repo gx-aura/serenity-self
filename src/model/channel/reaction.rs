@@ -11,7 +11,7 @@ use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde::de::{Deserialize, Error as DeError, MapAccess, Visitor};
 use serde::ser::{Serialize, SerializeMap, Serializer};
 #[cfg(feature = "model")]
-use tracing::warn;
+use tracing::debug;
 
 #[cfg(feature = "model")]
 use crate::http::{CacheHttp, Http};
@@ -288,7 +288,7 @@ impl Reaction {
 
         if limit > 100 {
             limit = 100;
-            warn!("Reaction users limit clamped to 100! (API Restriction)");
+            debug!("Reaction users limit clamped to 100! (API Restriction)");
         }
 
         http.as_ref()

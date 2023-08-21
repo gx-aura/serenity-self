@@ -51,7 +51,7 @@ fn permissions_in(
         if let Some(role) = roles.get(&role) {
             permissions |= role.permissions;
         } else {
-            tracing::warn!("{} on {} has non-existent role {:?}", member.user.id, guild_id, role);
+            tracing::debug!("{} on {} has non-existent role {:?}", member.user.id, guild_id, role);
         }
     }
 
@@ -90,7 +90,7 @@ fn permissions_in(
             permissions = (permissions & !overwrite.deny) | overwrite.allow;
         }
     } else {
-        tracing::warn!("Guild {} does not contain channel {}", guild_id, channel_id);
+        tracing::debug!("Guild {} does not contain channel {}", guild_id, channel_id);
     }
 
     if channel_id.0 == guild_id.0 {

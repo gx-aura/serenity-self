@@ -32,7 +32,7 @@ use std::task::{Context as FutContext, Poll};
 
 use futures::future::BoxFuture;
 use tokio::sync::{Mutex, RwLock};
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, error, instrument};
 use typemap_rev::{TypeMap, TypeMapKey};
 
 #[cfg(feature = "gateway")]
@@ -386,7 +386,7 @@ impl Future for ClientBuilder {
                 let ws_url = Arc::new(Mutex::new(match http.get_gateway().await {
                     Ok(response) => response.url,
                     Err(err) => {
-                        tracing::warn!("HTTP request to get gateway URL failed: {}", err);
+                        tracing::debug!("HTTP request to get gateway URL failed: {}", err);
                         "wss://gateway.discord.gg".to_string()
                     },
                 }));
@@ -968,7 +968,7 @@ impl Client {
 
             if let Err(why) = manager.initialize() {
                 error!("Failed to boot a shard: {:?}", why);
-                info!("Shutting down all shards");
+                debug!("Shutting down all shards");
 
                 manager.shutdown_all().await;
 

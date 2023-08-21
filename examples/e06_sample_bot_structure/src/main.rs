@@ -22,7 +22,7 @@ use serenity::http::Http;
 use serenity::model::event::ResumedEvent;
 use serenity::model::gateway::Ready;
 use serenity::prelude::*;
-use tracing::{error, info};
+use tracing::{error, debug};
 
 use crate::commands::math::*;
 use crate::commands::meta::*;
@@ -39,11 +39,11 @@ struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
     async fn ready(&self, _: Context, ready: Ready) {
-        info!("Connected as {}", ready.user.name);
+        debug!("Connected as {}", ready.user.name);
     }
 
     async fn resume(&self, _: Context, _: ResumedEvent) {
-        info!("Resumed");
+        debug!("Resumed");
     }
 }
 

@@ -5,7 +5,7 @@ use futures::channel::mpsc::{UnboundedReceiver as Receiver, UnboundedSender as S
 use futures::StreamExt;
 use tokio::sync::{Mutex, RwLock};
 use tokio::time::{sleep, timeout, Duration, Instant};
-use tracing::{debug, info, instrument, warn};
+use tracing::{debug, instrument};
 use typemap_rev::TypeMap;
 
 use super::{
@@ -160,8 +160,8 @@ impl ShardQueuer {
         self.check_last_start().await;
 
         if let Err(why) = self.start(id, total).await {
-            warn!("[Shard Queuer] Err starting shard {}: {:?}", id, why);
-            info!("[Shard Queuer] Re-queueing start of shard {}", id);
+            debug!("[Shard Queuer] Err starting shard {}: {:?}", id, why);
+            debug!("[Shard Queuer] Re-queueing start of shard {}", id);
 
             self.queue.push_back((id, total));
         }
@@ -224,7 +224,7 @@ impl ShardQueuer {
             runners.keys().copied().collect::<Vec<_>>()
         };
 
-        info!("Shutting down all shards");
+        debug!("Shutting down all shards");
 
         for shard_id in keys {
             self.shutdown(shard_id, 1000).await;
@@ -239,7 +239,7 @@ impl ShardQueuer {
     /// stopped.
     #[instrument(skip(self))]
     pub async fn shutdown(&mut self, shard_id: ShardId, code: u16) {
-        info!("Shutting down shard {}", shard_id);
+        debug!("Shutting down shard {}", shard_id);
 
         if let Some(runner) = self.runners.lock().await.get(&shard_id) {
             let shutdown = ShardManagerMessage::Shutdown(shard_id, code);
@@ -247,7 +247,7 @@ impl ShardQueuer {
             let msg = InterMessage::Client(Box::new(client_msg));
 
             if let Err(why) = runner.runner_tx.tx.unbounded_send(msg) {
-                warn!(
+                debug!(
                     "Failed to cleanly shutdown shard {} when sending message to shard runner: {:?}",
                     shard_id,
                     why,

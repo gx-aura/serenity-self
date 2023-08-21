@@ -5,7 +5,7 @@ use async_tungstenite::tungstenite::Message;
 use flate2::read::ZlibDecoder;
 use futures::{SinkExt, StreamExt};
 use tokio::time::timeout;
-use tracing::{instrument, warn};
+use tracing::{instrument, debug};
 use url::Url;
 
 use crate::gateway::{GatewayError, WsStream};
@@ -53,19 +53,19 @@ pub(crate) fn convert_ws_message(message: Option<Message>) -> Result<Option<Valu
             let mut decompressed = String::with_capacity(bytes.len() * DECOMPRESSION_MULTIPLIER);
 
             ZlibDecoder::new(&bytes[..]).read_to_string(&mut decompressed).map_err(|why| {
-                warn!("Err decompressing bytes: {:?}; bytes: {:?}", why, bytes);
+                debug!("Err decompressing bytes: {:?}; bytes: {:?}", why, bytes);
 
                 why
             })?;
 
             from_str(decompressed.as_mut_str()).map(Some).map_err(|why| {
-                warn!("Err deserializing bytes: {:?}; bytes: {:?}", why, bytes);
+                debug!("Err deserializing bytes: {:?}; bytes: {:?}", why, bytes);
 
                 why
             })?
         },
         Some(Message::Text(mut payload)) => from_str(&mut payload).map(Some).map_err(|why| {
-            warn!("Err deserializing text: {:?}; text: {}", why, payload,);
+            debug!("Err deserializing text: {:?}; text: {}", why, payload,);
 
             why
         })?,

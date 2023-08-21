@@ -20,7 +20,7 @@ use serde::de::Error as DeError;
 #[cfg(feature = "model")]
 use tracing::error;
 #[cfg(all(feature = "model", feature = "cache"))]
-use tracing::warn;
+use tracing::debug;
 
 #[doc(hidden)]
 #[deprecated(note = "import the types from the `audit_log` module")]
@@ -2066,7 +2066,7 @@ impl Guild {
 
                 permissions |= role.permissions;
             } else {
-                warn!("{} on {} has non-existent role {:?}", member.user.id, self.id, role,);
+                debug!("{} on {} has non-existent role {:?}", member.user.id, self.id, role,);
             }
         }
 

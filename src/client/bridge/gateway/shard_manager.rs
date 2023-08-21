@@ -5,7 +5,7 @@ use futures::channel::mpsc::{self, UnboundedReceiver as Receiver, UnboundedSende
 use futures::StreamExt;
 use tokio::sync::{Mutex, RwLock};
 use tokio::time::timeout;
-use tracing::{info, instrument, warn};
+use tracing::{instrument, debug};
 use typemap_rev::TypeMap;
 
 use super::{
@@ -241,7 +241,7 @@ impl ShardManager {
     /// [`ShardRunner`]: super::ShardRunner
     #[instrument(skip(self))]
     pub async fn restart(&mut self, shard_id: ShardId) {
-        info!("Restarting shard {}", shard_id);
+        debug!("Restarting shard {}", shard_id);
         self.shutdown(shard_id, 4000).await;
 
         let shard_total = self.shard_total;
@@ -272,14 +272,14 @@ impl ShardManager {
     pub async fn shutdown(&mut self, shard_id: ShardId, code: u16) {
         const TIMEOUT: tokio::time::Duration = tokio::time::Duration::from_secs(5);
 
-        info!("Shutting down shard {}", shard_id);
+        debug!("Shutting down shard {}", shard_id);
 
         drop(self.shard_queuer.unbounded_send(ShardQueuerMessage::ShutdownShard(shard_id, code)));
 
         match timeout(TIMEOUT, self.shard_shutdown.next()).await {
             Ok(Some(shutdown_shard_id)) => {
                 if shutdown_shard_id != shard_id {
-                    warn!(
+                    debug!(
                         "Failed to cleanly shutdown shard {}: Shutdown channel sent incorrect ID",
                         shard_id,
                     );
@@ -287,7 +287,7 @@ impl ShardManager {
             },
             Ok(None) => (),
             Err(why) => {
-                warn!("Failed to cleanly shutdown shard {}, reached timeout: {:?}", shard_id, why);
+                debug!("Failed to cleanly shutdown shard {}, reached timeout: {:?}", shard_id, why);
             },
         }
 
@@ -311,7 +311,7 @@ impl ShardManager {
             runners.keys().copied().collect::<Vec<_>>()
         };
 
-        info!("Shutting down all shards");
+        debug!("Shutting down all shards");
 
         for shard_id in keys {
             self.shutdown(shard_id, 1000).await;
@@ -323,7 +323,7 @@ impl ShardManager {
 
     #[instrument(skip(self))]
     fn boot(&mut self, shard_info: [ShardId; 2]) {
-        info!("Telling shard queuer to start shard {}", shard_info[0]);
+        debug!("Telling shard queuer to start shard {}", shard_info[0]);
 
         let msg = ShardQueuerMessage::Start(shard_info[0], shard_info[1]);
 

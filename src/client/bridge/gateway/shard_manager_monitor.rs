@@ -3,7 +3,7 @@ use std::sync::Arc;
 use futures::channel::mpsc::{UnboundedReceiver as Receiver, UnboundedSender as Sender};
 use futures::StreamExt;
 use tokio::sync::Mutex;
-use tracing::{debug, instrument, warn};
+use tracing::{debug, instrument, debug};
 
 use super::{ShardManager, ShardManagerMessage};
 use crate::client::bridge::gateway::ShardId;
@@ -88,7 +88,7 @@ impl ShardManagerMonitor {
                 ShardManagerMessage::ShutdownInitiated => break,
                 ShardManagerMessage::ShutdownFinished(shard_id) => {
                     if let Err(why) = self.shutdown.unbounded_send(shard_id) {
-                        warn!(
+                        debug!(
                             "[ShardMonitor] Could not forward Shutdown signal to ShardManager for shard {}: {:#?}",
                             shard_id,
                             why

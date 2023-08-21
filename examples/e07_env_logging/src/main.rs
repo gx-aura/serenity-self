@@ -7,7 +7,7 @@ use serenity::model::channel::Message;
 use serenity::model::event::ResumedEvent;
 use serenity::model::gateway::Ready;
 use serenity::prelude::*;
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, error, instrument};
 
 struct Handler;
 
@@ -15,7 +15,7 @@ struct Handler;
 impl EventHandler for Handler {
     async fn ready(&self, _: Context, ready: Ready) {
         // Log at the INFO level. This is a macro from the `tracing` crate.
-        info!("{} is connected!", ready.user.name);
+        debug!("{} is connected!", ready.user.name);
     }
 
     // For instrument to work, all parameters must implement Debug.
@@ -41,7 +41,7 @@ impl EventHandler for Handler {
 // This additional information will also only be shown if the LOG level is set to `debug`
 #[instrument]
 async fn before(_: &Context, msg: &Message, command_name: &str) -> bool {
-    info!("Got command '{}' by user '{}'", command_name, msg.author.name);
+    debug!("Got command '{}' by user '{}'", command_name, msg.author.name);
 
     true
 }

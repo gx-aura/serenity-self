@@ -8,7 +8,7 @@ use futures::channel::mpsc::{self, UnboundedReceiver as Receiver, UnboundedSende
 use futures::{SinkExt, StreamExt};
 use serde::Deserialize;
 use tokio::sync::RwLock;
-use tracing::{debug, error, info, instrument, trace, warn};
+use tracing::{debug, error, instrument, trace};
 use typemap_rev::TypeMap;
 
 use super::event::{ClientEvent, ShardStageUpdateEvent};
@@ -121,7 +121,7 @@ impl ShardRunner {
     /// [`ShardManager`]: super::ShardManager
     #[instrument(skip(self))]
     pub async fn run(&mut self) -> Result<()> {
-        info!("[ShardRunner {:?}] Running", self.shard.shard_info());
+        debug!("[ShardRunner {:?}] Running", self.shard.shard_info());
 
         loop {
             trace!("[ShardRunner {:?}] loop iteration started.", self.shard.shard_info());
@@ -131,7 +131,7 @@ impl ShardRunner {
 
             // check heartbeat
             if !self.shard.check_heartbeat().await {
-                warn!("[ShardRunner {:?}] Error heartbeating", self.shard.shard_info(),);
+                debug!("[ShardRunner {:?}] Error heartbeating", self.shard.shard_info(),);
 
                 return self.request_restart().await;
             }
@@ -168,7 +168,7 @@ impl ShardRunner {
                             ReconnectType::Reidentify => return self.request_restart().await,
                             ReconnectType::Resume => {
                                 if let Err(why) = self.shard.resume().await {
-                                    warn!(
+                                    debug!(
                                         "[ShardRunner {:?}] Resume failed, reidentifying: {:?}",
                                         self.shard.shard_info(),
                                         why
@@ -301,7 +301,7 @@ impl ShardRunner {
             match self.shard.client.next().await {
                 Some(Ok(tungstenite::Message::Close(_))) => break,
                 Some(Err(_)) => {
-                    warn!(
+                    debug!(
                         "[ShardRunner {:?}] Received an error awaiting close frame",
                         self.shard.shard_info(),
                     );
@@ -314,7 +314,7 @@ impl ShardRunner {
         // Inform the manager that shutdown for this shard has finished.
         if let Err(why) = self.manager_tx.unbounded_send(ShardManagerMessage::ShutdownFinished(id))
         {
-            warn!(
+            debug!(
                 "[ShardRunner {:?}] Could not send ShutdownFinished: {:#?}",
                 self.shard.shard_info(),
                 why,
@@ -358,7 +358,7 @@ impl ShardRunner {
                 },
                 ShardClientMessage::Manager(ShardManagerMessage::ShutdownAll) => {
                     // This variant should never be received.
-                    warn!("[ShardRunner {:?}] Received a ShutdownAll?", self.shard.shard_info(),);
+                    debug!("[ShardRunner {:?}] Received a ShutdownAll?", self.shard.shard_info(),);
 
                     true
                 },
@@ -379,7 +379,7 @@ impl ShardRunner {
                     | ShardManagerMessage::ShardInvalidGatewayIntents,
                 ) => {
                     // These variants should never be received.
-                    warn!("[ShardRunner {:?}] Received a ShardError?", self.shard.shard_info(),);
+                    debug!("[ShardRunner {:?}] Received a ShardError?", self.shard.shard_info(),);
 
                     true
                 },
@@ -516,7 +516,7 @@ impl ShardRunner {
                     }
                 },
                 Ok(None) => {
-                    warn!(
+                    debug!(
                         "[ShardRunner {:?}] Sending half DC; restarting",
                         self.shard.shard_info(),
                     );
@@ -547,7 +547,7 @@ impl ShardRunner {
                     ReconnectType::Reidentify => return Ok((None, None, false)),
                     ReconnectType::Resume => {
                         if let Err(why) = self.shard.resume().await {
-                            warn!("Failed to resume: {:?}", why);
+                            debug!("Failed to resume: {:?}", why);
 
                             return Ok((None, None, false));
                         }
@@ -642,7 +642,7 @@ impl ShardRunner {
         let msg = ShardManagerMessage::Restart(shard_id);
 
         if let Err(error) = self.manager_tx.unbounded_send(msg) {
-            warn!("Error sending request restart: {:?}", error);
+            debug!("Error sending request restart: {:?}", error);
         }
 
         #[cfg(feature = "voice")]

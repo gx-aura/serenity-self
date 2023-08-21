@@ -4,7 +4,7 @@ use std::time::{Duration as StdDuration, Instant};
 use async_tungstenite::tungstenite::error::Error as TungsteniteError;
 use async_tungstenite::tungstenite::protocol::frame::CloseFrame;
 use tokio::sync::Mutex;
-use tracing::{debug, error, info, instrument, trace, warn};
+use tracing::{debug, error, instrument, trace};
 use url::Url;
 
 use super::{
@@ -221,7 +221,7 @@ impl Shard {
                         }
                     },
                     other => {
-                        warn!("[Shard {:?}] Other err w/ keepalive: {:?}", self.shard_info, other);
+                        debug!("[Shard {:?}] Other err w/ keepalive: {:?}", self.shard_info, other);
                     },
                 }
 
@@ -321,7 +321,7 @@ impl Shard {
     #[instrument(skip(self))]
     fn handle_gateway_dispatch(&mut self, seq: u64, event: &Event) -> Option<ShardAction> {
         if seq > self.seq + 1 {
-            warn!("[Shard {:?}] Sequence off; them: {}, us: {}", self.shard_info, seq, self.seq);
+            debug!("[Shard {:?}] Sequence off; them: {}, us: {}", self.shard_info, seq, self.seq);
         }
 
         match event {
@@ -336,7 +336,7 @@ impl Shard {
                 }
             },
             Event::Resumed(_) => {
-                info!("[Shard {:?}] Resumed", self.shard_info);
+                debug!("[Shard {:?}] Resumed", self.shard_info);
 
                 self.stage = ConnectionStage::Connected;
                 self.last_heartbeat_acknowledged = true;
@@ -352,11 +352,11 @@ impl Shard {
 
     #[instrument(skip(self))]
     fn handle_heartbeat_event(&mut self, s: u64) -> ShardAction {
-        info!("[Shard {:?}] Received shard heartbeat", self.shard_info);
+        debug!("[Shard {:?}] Received shard heartbeat", self.shard_info);
 
         // Received seq is off -- attempt to resume.
         if s > self.seq + 1 {
-            info!(
+            debug!(
                 "[Shard {:?}] Received off sequence (them: {}; us: {}); resuming",
                 self.shard_info, s, self.seq
             );
@@ -366,7 +366,7 @@ impl Shard {
 
                 return ShardAction::Identify;
             }
-            warn!(
+            debug!(
                 "[Shard {:?}] Heartbeat during non-Handshake; auto-reconnecting",
                 self.shard_info
             );
@@ -387,13 +387,13 @@ impl Shard {
 
         match num {
             Some(close_codes::UNKNOWN_OPCODE) => {
-                warn!("[Shard {:?}] Sent invalid opcode.", self.shard_info);
+                debug!("[Shard {:?}] Sent invalid opcode.", self.shard_info);
             },
             Some(close_codes::DECODE_ERROR) => {
-                warn!("[Shard {:?}] Sent invalid message.", self.shard_info);
+                debug!("[Shard {:?}] Sent invalid message.", self.shard_info);
             },
             Some(close_codes::NOT_AUTHENTICATED) => {
-                warn!("[Shard {:?}] Sent no authentication.", self.shard_info);
+                debug!("[Shard {:?}] Sent no authentication.", self.shard_info);
 
                 return Err(Error::Gateway(GatewayError::NoAuthentication));
             },
@@ -406,18 +406,18 @@ impl Shard {
                 return Err(Error::Gateway(GatewayError::InvalidAuthentication));
             },
             Some(close_codes::ALREADY_AUTHENTICATED) => {
-                warn!("[Shard {:?}] Already authenticated.", self.shard_info);
+                debug!("[Shard {:?}] Already authenticated.", self.shard_info);
             },
             Some(close_codes::INVALID_SEQUENCE) => {
-                warn!("[Shard {:?}] Sent invalid seq: {}.", self.shard_info, self.seq);
+                debug!("[Shard {:?}] Sent invalid seq: {}.", self.shard_info, self.seq);
 
                 self.seq = 0;
             },
             Some(close_codes::RATE_LIMITED) => {
-                warn!("[Shard {:?}] Gateway ratelimited.", self.shard_info);
+                debug!("[Shard {:?}] Gateway ratelimited.", self.shard_info);
             },
             Some(close_codes::INVALID_SHARD) => {
-                warn!("[Shard {:?}] Sent invalid shard data.", self.shard_info);
+                debug!("[Shard {:?}] Sent invalid shard data.", self.shard_info);
 
                 return Err(Error::Gateway(GatewayError::InvalidShardData));
             },
@@ -427,7 +427,7 @@ impl Shard {
                 return Err(Error::Gateway(GatewayError::OverloadedShard));
             },
             Some(4006 | close_codes::SESSION_TIMEOUT) => {
-                info!("[Shard {:?}] Invalid session.", self.shard_info);
+                debug!("[Shard {:?}] Invalid session.", self.shard_info);
 
                 self.session_id = None;
             },
@@ -445,7 +445,7 @@ impl Shard {
                 return Err(Error::Gateway(GatewayError::DisallowedGatewayIntents));
             },
             Some(other) if !clean => {
-                warn!(
+                debug!(
                     "[Shard {:?}] Unknown unclean close {}: {:?}",
                     self.shard_info,
                     other,
@@ -524,7 +524,7 @@ impl Shard {
                 }))
             },
             Ok(GatewayEvent::InvalidateSession(resumable)) => {
-                info!("[Shard {:?}] Received session invalidation", self.shard_info,);
+                debug!("[Shard {:?}] Received session invalidation", self.shard_info,);
 
                 Ok(Some(if resumable {
                     ShardAction::Reconnect(ReconnectType::Resume)
@@ -535,13 +535,13 @@ impl Shard {
             Ok(GatewayEvent::Reconnect) => Ok(Some(ShardAction::Reconnect(ReconnectType::Resume))),
             Err(Error::Gateway(GatewayError::Closed(ref data))) => self.handle_gateway_closed(data),
             Err(Error::Tungstenite(ref why)) => {
-                warn!("[Shard {:?}] Websocket error: {:?}", self.shard_info, why);
-                info!("[Shard {:?}] Will attempt to auto-reconnect", self.shard_info);
+                debug!("[Shard {:?}] Websocket error: {:?}", self.shard_info, why);
+                debug!("[Shard {:?}] Will attempt to auto-reconnect", self.shard_info);
 
                 Ok(Some(ShardAction::Reconnect(self.reconnection_type())))
             },
             Err(ref why) => {
-                warn!("[Shard {:?}] Unhandled error: {:?}", self.shard_info, why);
+                debug!("[Shard {:?}] Unhandled error: {:?}", self.shard_info, why);
 
                 Ok(None)
             },
@@ -592,7 +592,7 @@ impl Shard {
 
         // Otherwise, we're good to heartbeat.
         if let Err(why) = self.heartbeat().await {
-            warn!("[Shard {:?}] Err heartbeating: {:?}", self.shard_info, why);
+            debug!("[Shard {:?}] Err heartbeating: {:?}", self.shard_info, why);
 
             false
         } else {
@@ -791,7 +791,7 @@ impl Shard {
 
     #[instrument(skip(self))]
     pub async fn reconnect(&mut self) -> Result<()> {
-        info!("[Shard {:?}] Attempting to reconnect", self.shard_info());
+        debug!("[Shard {:?}] Attempting to reconnect", self.shard_info());
 
         self.reset().await;
         self.client = self.initialize().await?;
@@ -808,7 +808,7 @@ impl Shard {
 async fn connect(base_url: &str) -> Result<WsStream> {
     let url =
         Url::parse(&format!("{}?v={}", base_url, constants::GATEWAY_VERSION)).map_err(|why| {
-            warn!("Error building gateway URL with base `{}`: {:?}", base_url, why);
+            debug!("Error building gateway URL with base `{}`: {:?}", base_url, why);
 
             Error::Gateway(GatewayError::BuildingUrl)
         })?;

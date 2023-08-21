@@ -1,6 +1,6 @@
 use serde::de::Error as DeError;
 #[cfg(feature = "cache")]
-use tracing::{error, warn};
+use tracing::{error, debug};
 
 #[cfg(feature = "model")]
 use crate::builder::{
@@ -1146,7 +1146,7 @@ impl PartialGuild {
 
                 permissions |= role.permissions;
             } else {
-                warn!("{} on {} has non-existent role {:?}", member.user.id, self.id, role,);
+                debug!("{} on {} has non-existent role {:?}", member.user.id, self.id, role,);
             }
         }
 

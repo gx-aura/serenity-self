@@ -83,7 +83,7 @@ macro_rules! enum_number {
                         match value {
                             $( $(#[$attr])? v if v == $name::$variant as u64 => Ok($name::$variant), )*
                             _ => {
-                                tracing::warn!("Unknown {} value: {}", stringify!($name), value);
+                                tracing::debug!("Unknown {} value: {}", stringify!($name), value);
 
                                 Ok($name::Unknown)
                             }

@@ -66,7 +66,7 @@ pub fn deserialize_guild_channels<'de, D: Deserializer<'de>>(
             Ok(channel) => {
                 map.insert(channel.id(), channel);
             },
-            Err(e) => tracing::warn!("skipping guild channel due to deserialization error: {}", e),
+            Err(e) => tracing::debug!("skipping guild channel due to deserialization error: {}", e),
         }
     }
 
